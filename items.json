@@ -1,0 +1,35 @@
+[
+  {
+    "id": "1764553536788",
+    "type": "found",
+    "name": "Kazleen June Caballero",
+    "itemName": "Timberland Backpack",
+    "email": "julianmiguel.felipe@neu.edu.ph",
+    "location": "PSB Open Field",
+    "description": "it has a laptop inside if you can unlock it ill give you the bag",
+    "image": "/uploads/1764553536776-57e2f00b-ae1f-4387-a918-aa884b470e0c.jpg",
+    "createdAt": "2025-12-01T01:45:36.788Z"
+  },
+  {
+    "id": "1764553438225",
+    "type": "found",
+    "name": "Ricardo Gian Herrero",
+    "itemName": "Glue gun",
+    "email": "julianmiguel.felipe@neu.edu.ph",
+    "location": "Main 1F Room 101",
+    "description": "it has no stand, and a full glue stick and the brand is Dolphin",
+    "image": "/uploads/1764553438218-0d2e2556-0e48-4d89-8f92-c8af68c22f9f.jpg",
+    "createdAt": "2025-12-01T01:43:58.225Z"
+  },
+  {
+    "id": "1764552314838",
+    "type": "found",
+    "name": "Julian Miguel Felipe",
+    "itemName": "Atomic Habits Book",
+    "email": "julianmiguel.felipe@neu.edu.ph",
+    "location": "Main 1F Room 101",
+    "description": "It has a kpop photocard as a bookmark on page 45",
+    "image": "/uploads/1764552314828-91801ede-84b6-4bae-8a8c-02dd58cf763b.jpg",
+    "createdAt": "2025-12-01T01:25:14.838Z"
+  }
+]
