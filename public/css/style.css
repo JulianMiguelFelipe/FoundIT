@@ -1,0 +1,27 @@
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Card image wrapper to keep all item cards the same height */
+.card-img-wrapper {
+  height: 180px;
+  overflow: hidden;
+}
+
+.card-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ensures image fits without cropping */
+  display: block;
+}
+
+/* Optional: keep card body spacing consistent */
+.card .card-body {
+  padding: 0.75rem 1rem;
+}
+
+/* Modal image styling */
+#itemModalBody img {
+  max-height: 400px;
+  object-fit: contain;
+}
