@@ -6,24 +6,24 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from public/
+// ✅ Serve static files from public/
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve uploaded images
+// ✅ Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Parse form data
+// ✅ Parse form data
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Multer setup
+// ✅ Multer setup for image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads'),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage });
 
-// Load items from JSON
+// ✅ Helper functions for items.json
 function loadItems() {
   try {
     return JSON.parse(fs.readFileSync('items.json', 'utf8'));
@@ -32,12 +32,16 @@ function loadItems() {
   }
 }
 
-// Save items to JSON
 function saveItems(items) {
   fs.writeFileSync('items.json', JSON.stringify(items, null, 2));
 }
 
-// Upload route
+// ✅ Root route (fixes "Cannot GET /")
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ✅ Upload route
 app.post('/api/upload', upload.single('image'), (req, res) => {
   const items = loadItems();
   const newItem = {
@@ -55,12 +59,12 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   res.json({ success: true });
 });
 
-// Get items
+// ✅ Get items route
 app.get('/api/items', (req, res) => {
   res.json(loadItems());
 });
 
-// Start server
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
