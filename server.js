@@ -1,64 +1,66 @@
 const express = require('express');
-const multer  = require('multer');
+const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const ITEMS_FILE = path.join(__dirname, 'items.json');
-if (!fs.existsSync(ITEMS_FILE)) fs.writeFileSync(ITEMS_FILE, '[]', 'utf8');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => {
-    const safeName = file.originalname.replace(/\s+/g, '_');
-    cb(null, Date.now() + '-' + safeName);
-  }
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve static files from public/
 app.use(express.static(path.join(__dirname, 'public')));
 
-const readItems = () => {
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Parse form data
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Multer setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage });
+
+// Load items from JSON
+function loadItems() {
   try {
-    const raw = fs.readFileSync(ITEMS_FILE, 'utf8');
-    return JSON.parse(raw || '[]');
+    return JSON.parse(fs.readFileSync('items.json', 'utf8'));
   } catch {
     return [];
   }
-};
-const writeItems = items => {
-  fs.writeFileSync(ITEMS_FILE, JSON.stringify(items, null, 2), 'utf8');
-};
+}
 
+// Save items to JSON
+function saveItems(items) {
+  fs.writeFileSync('items.json', JSON.stringify(items, null, 2));
+}
+
+// Upload route
 app.post('/api/upload', upload.single('image'), (req, res) => {
-  const { name, itemName, email, location, description, type } = req.body;
-  if (!req.file) return res.status(400).json({ error: 'Image is required.' });
-  if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email is required.' });
-
-  const items = readItems();
-  const item = {
+  const items = loadItems();
+  const newItem = {
     id: Date.now().toString(),
-    type: type || 'found',
-    name: name || 'Anonymous',
-    itemName: itemName || '',
-    email,
-    location: location || '',
-    description: description || '',
-    image: `/uploads/${req.file.filename}`,
+    itemName: req.body.itemName,
+    description: req.body.description,
+    location: req.body.location,
+    name: req.body.name,
+    email: req.body.email,
+    image: req.file ? '/uploads/' + req.file.filename : '',
     createdAt: new Date().toISOString()
   };
-  items.unshift(item);
-  writeItems(items);
-  res.json({ success: true, item });
+  items.push(newItem);
+  saveItems(items);
+  res.json({ success: true });
 });
 
+// Get items
 app.get('/api/items', (req, res) => {
-  res.json(readItems());
+  res.json(loadItems());
 });
 
-app.listen(PORT, () => console.log(`Server running: http://localhost:${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
