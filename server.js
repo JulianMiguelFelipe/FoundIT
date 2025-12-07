@@ -3,7 +3,6 @@ const multer = require('multer');
 const path = require('path');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const fs = require('fs');
 
 const usePostgres = !!process.env.DATABASE_URL;
 let db;
@@ -116,10 +115,20 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
 app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
-      const result = await db.query(`SELECT * FROM items ORDER BY id DESC`);
+      const result = await db.query(`
+        SELECT id,
+               itemName AS "itemName",
+               description AS "description",
+               location AS "location",
+               name AS "name",
+               email AS "email",
+               image AS "image",
+               createdAt AS "createdAt"
+        FROM items ORDER BY id DESC
+      `);
       const rows = result.rows.map(r => ({
         ...r,
-        createdAt: new Date(r.createdat).toISOString()
+        createdAt: new Date(r.createdAt).toISOString()
       }));
       res.json(rows);
     } else {
