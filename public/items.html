@@ -75,6 +75,7 @@
 
     function render(items) {
       const cards = items.map((item) => {
+        // Cloudinary URLs are already returned by backend in item.image
         const imageHtml = item.image
           ? `<img src="${item.image}" class="card-img-top" alt="${escapeHtml(item.itemName)}">`
           : '';
@@ -120,7 +121,7 @@
 
       const img = document.getElementById('modalImg');
       if (item.image) {
-        img.src = item.image;
+        img.src = item.image; // Cloudinary URL
         img.classList.remove('d-none');
       } else {
         img.classList.add('d-none');
