@@ -43,7 +43,17 @@
       </div>
       <div class="col-12">
         <label class="form-label">Image (optional)</label>
-        <input type="file" name="image" accept="image/*" class="form-control" />
+        <!-- Camera-enabled input -->
+        <input 
+          type="file" 
+          name="image" 
+          accept="image/*" 
+          capture="environment" 
+          class="form-control" 
+        />
+        <small class="text-muted">
+          You can choose a file from your gallery or take a photo with your camera.
+        </small>
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary">Submit item</button>
