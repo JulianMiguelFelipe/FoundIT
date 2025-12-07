@@ -3,68 +3,181 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Detect environment
+const usePostgres = !!process.env.DATABASE_URL;
+
+let db; // will hold either sqlite3 or pg pool
+
+if (usePostgres) {
+  // PostgreSQL (Render)
+  const { Pool } = require('pg');
+  db = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  // Create table if not exists
+  (async () => {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        itemName TEXT NOT NULL,
+        description TEXT NOT NULL,
+        location TEXT NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        image TEXT,
+        createdAt TIMESTAMP NOT NULL
+      )
+    `);
+  })();
+} else {
+  // SQLite (local dev)
+  const sqlite3 = require('sqlite3').verbose();
+  const dbPath = path.join(__dirname, 'foundit.db');
+  db = new sqlite3.Database(dbPath);
+
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        itemName TEXT NOT NULL,
+        description TEXT NOT NULL,
+        location TEXT NOT NULL,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        image TEXT,
+        createdAt TEXT NOT NULL
+      )
+    `);
+  });
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ Serve static files from public/
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
-
-// ✅ Serve uploaded images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ✅ Parse form data
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// ✅ Multer setup for image uploads
+// Multer setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads'),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });
-
-// ✅ Helper functions for items.json
-function loadItems() {
-  try {
-    return JSON.parse(fs.readFileSync('items.json', 'utf8'));
-  } catch {
-    return [];
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const safeName = file.originalname.replace(/\s+/g, '-');
+    cb(null, Date.now() + '-' + safeName);
   }
-}
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
-function saveItems(items) {
-  fs.writeFileSync('items.json', JSON.stringify(items, null, 2));
-}
+// --- Routes ---
 
-// ✅ Root route (fixes "Cannot GET /")
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Create item
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  const { itemName, description, location, name, email } = req.body;
+  const image = req.file ? '/uploads/' + req.file.filename : '';
+  const createdAt = new Date().toISOString();
+
+  if (!itemName || !description || !location || !name || !email) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    if (usePostgres) {
+      const result = await db.query(
+        `INSERT INTO items (itemName, description, location, name, email, image, createdAt)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+        [itemName, description, location, name, email, image, createdAt]
+      );
+      res.json({ success: true, id: result.rows[0].id });
+    } else {
+      db.run(
+        `INSERT INTO items (itemName, description, location, name, email, image, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [itemName, description, location, name, email, image, createdAt],
+        function (err) {
+          if (err) return res.status(500).json({ error: 'Database error' });
+          res.json({ success: true, id: this.lastID });
+        }
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// ✅ Upload route
-app.post('/api/upload', upload.single('image'), (req, res) => {
-  const items = loadItems();
-  const newItem = {
-    id: Date.now().toString(),
-    itemName: req.body.itemName,
-    description: req.body.description,
-    location: req.body.location,
-    name: req.body.name,
-    email: req.body.email,
-    image: req.file ? '/uploads/' + req.file.filename : '',
-    createdAt: new Date().toISOString()
-  };
-  items.push(newItem);
-  saveItems(items);
-  res.json({ success: true });
+// Read items
+app.get('/api/items', async (req, res) => {
+  try {
+    if (usePostgres) {
+      const result = await db.query(`SELECT * FROM items ORDER BY id DESC`);
+      res.json(result.rows);
+    } else {
+      db.all(`SELECT * FROM items ORDER BY id DESC`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json(rows);
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// ✅ Get items route
-app.get('/api/items', (req, res) => {
-  res.json(loadItems());
+// Update item
+app.put('/api/items/:id', async (req, res) => {
+  const id = req.params.id;
+  const { itemName, description, location, name, email } = req.body;
+
+  try {
+    if (usePostgres) {
+      const result = await db.query(
+        `UPDATE items SET itemName=$1, description=$2, location=$3, name=$4, email=$5 WHERE id=$6`,
+        [itemName, description, location, name, email, id]
+      );
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Item not found' });
+      res.json({ success: true });
+    } else {
+      db.run(
+        `UPDATE items SET itemName=?, description=?, location=?, name=?, email=? WHERE id=?`,
+        [itemName, description, location, name, email, id],
+        function (err) {
+          if (err) return res.status(500).json({ error: 'Database error' });
+          if (this.changes === 0) return res.status(404).json({ error: 'Item not found' });
+          res.json({ success: true });
+        }
+      );
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// ✅ Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Delete item
+app.delete('/api/items/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    if (usePostgres) {
+      const result = await db.query(`DELETE FROM items WHERE id=$1`, [id]);
+      if (result.rowCount === 0) return res.status(404).json({ error: 'Item not found' });
+      res.json({ success: true });
+    } else {
+      db.run(`DELETE FROM items WHERE id=?`, [id], function (err) {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (this.changes === 0) return res.status(404).json({ error: 'Item not found' });
+        res.json({ success: true });
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));

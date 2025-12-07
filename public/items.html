@@ -1,44 +1,158 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FoundIt! — Reported Items</title>
+  <title>FoundIT - Items</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .card-img-top { object-fit: cover; height: 180px; }
+    .card { cursor: pointer; }
+  </style>
 </head>
 <body class="bg-light">
-
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Reported Items</h5>
-    <div class="d-flex gap-2">
-      <select id="filterType" class="form-select form-select-sm">
-        <option value="all">All</option>
-        <option value="found">Found</option>
-        <option value="lost">Lost</option>
-      </select>
-      <input id="search" class="form-control form-control-sm" placeholder="Search description/location">
-    </div>
-  </div>
-
-  <div id="itemsContainer" class="row g-3"></div>
-</div>
-
-<!-- Item Detail Modal -->
-<div class="modal fade" id="itemModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Item Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">FoundIT</a>
+      <div>
+        <a class="btn btn-outline-light" href="/form.html">Submit Item</a>
       </div>
-      <div class="modal-body" id="itemModalBody"></div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Lost & Found Items</h2>
+      <input id="search" class="form-control w-50" placeholder="Search by name or location" />
+    </div>
+
+    <div id="grid" class="row g-3"></div>
+    <div id="empty" class="alert alert-info mt-3 d-none">No items yet. Be the first to submit!</div>
+    <div id="error" class="alert alert-danger mt-3 d-none"></div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="modalDesc"></p>
+          <p><strong>Location found:</strong> <span id="modalLoc"></span></p>
+          <p><strong>Contact:</strong> <span id="modalName"></span> — <a id="modalEmail"></a></p>
+          <img id="modalImg" class="img-fluid d-none" alt="Item image" />
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const grid = document.getElementById('grid');
+    const empty = document.getElementById('empty');
+    const errorBox = document.getElementById('error');
+    const search = document.getElementById('search');
+
+    let allItems = [];
+
+    async function loadItems() {
+      empty.classList.add('d-none');
+      errorBox.classList.add('d-none');
+      try {
+        const res = await fetch('/api/items');
+        const items = await res.json();
+        allItems = items;
+        render(items);
+        if (items.length === 0) empty.classList.remove('d-none');
+      } catch (err) {
+        errorBox.textContent = 'Failed to load items.';
+        errorBox.classList.remove('d-none');
+      }
+    }
+
+    function render(items) {
+      const cards = items.map((item) => {
+        const imageHtml = item.image
+          ? `<img src="${item.image}" class="card-img-top" alt="${escapeHtml(item.itemName)}">`
+          : '';
+        return `
+          <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card h-100 shadow-sm" data-id="${item.id}">
+              ${imageHtml}
+              <div class="card-body">
+                <h5 class="card-title">${escapeHtml(item.itemName)}</h5>
+                <p class="card-text">${escapeHtml(item.description)}</p>
+                <p class="card-text"><strong>Location found:</strong> ${escapeHtml(item.location)}</p>
+              </div>
+              <div class="card-footer">
+                <small class="text-muted">Posted: ${new Date(item.createdAt).toLocaleString()}</small>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      grid.innerHTML = cards;
+
+      // Attach click handlers after render
+      Array.from(grid.querySelectorAll('.card')).forEach((card) => {
+        card.addEventListener('click', () => {
+          const id = Number(card.getAttribute('data-id'));
+          showItem(id);
+        });
+      });
+    }
+
+    function showItem(id) {
+      const item = allItems.find((i) => i.id === id);
+      if (!item) return;
+
+      document.getElementById('modalTitle').textContent = item.itemName;
+      document.getElementById('modalDesc').textContent = item.description;
+      document.getElementById('modalLoc').textContent = item.location;
+      document.getElementById('modalName').textContent = item.name;
+
+      const emailLink = document.getElementById('modalEmail');
+      emailLink.textContent = item.email;
+      emailLink.href = 'mailto:' + item.email;
+
+      const img = document.getElementById('modalImg');
+      if (item.image) {
+        img.src = item.image;
+        img.classList.remove('d-none');
+      } else {
+        img.classList.add('d-none');
+        img.removeAttribute('src');
+      }
+
+      const modalEl = document.getElementById('itemModal');
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+
+    search.addEventListener('input', () => {
+      const q = search.value.toLowerCase();
+      const filtered = allItems.filter((i) =>
+        i.itemName.toLowerCase().includes(q) ||
+        i.location.toLowerCase().includes(q)
+      );
+      render(filtered);
+    });
+
+    // Basic HTML escaping to prevent breaking the template if values contain special chars
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return '';
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    loadItems();
+  </script>
 </body>
 </html>

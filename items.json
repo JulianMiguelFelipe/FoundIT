@@ -31,5 +31,25 @@
     "description": "It has a kpop photocard as a bookmark on page 45",
     "image": "/uploads/1764552314828-91801ede-84b6-4bae-8a8c-02dd58cf763b.jpg",
     "createdAt": "2025-12-01T01:25:14.838Z"
+  },
+  {
+    "id": "1765094659216",
+    "itemName": "Black Acoustic Guitar",
+    "description": "Its a guitar from the brand called lumanog and it has initials on the bottom",
+    "location": "PSB Open Field",
+    "name": "Julian Miguel Felipe",
+    "email": "julianmiguel.felipe@neu.edu.ph",
+    "image": "/uploads/1765094659204-4a8f3a51-d93e-46b4-8b1e-ee413bbd9c21.jpg",
+    "createdAt": "2025-12-07T08:04:19.216Z"
+  },
+  {
+    "id": "1765095258372",
+    "itemName": "Thermoflask",
+    "description": "Pink temu Aquaflask",
+    "location": "Main 1F Room 105",
+    "name": "Julian Miguel Felipe",
+    "email": "julianmiguel.felipe@neu.edu.ph",
+    "image": "/uploads/1765095258358-19435e5c-12d8-45dc-a7fb-d686d8f4dd6a.jpg",
+    "createdAt": "2025-12-07T08:14:18.372Z"
   }
 ]

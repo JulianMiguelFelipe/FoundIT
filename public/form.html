@@ -1,31 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Report Found Item</title>
+  <title>FoundIT - Submit Item</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-light">
-<div class="container py-4">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h4 class="card-title mb-3">Report Found Item</h4>
-      <form id="uploadForm" enctype="multipart/form-data">
-        <input type="hidden" name="type" value="found">
-        <div class="mb-2"><label class="form-label">Your Name</label><input class="form-control" name="name"></div>
-        <div class="mb-2"><label class="form-label">Item Name</label><input class="form-control" name="itemName" required></div>
-        <div class="mb-2"><label class="form-label">Email *</label><input class="form-control" type="email" name="email" required></div>
-        <div class="mb-2"><label class="form-label">Location Found</label><input class="form-control" name="location" required></div>
-        <div class="mb-2"><label class="form-label">Description</label><textarea class="form-control" name="description"></textarea></div>
-        <div class="mb-2"><label class="form-label">Image</label><input class="form-control" type="file" name="image" accept="image/*" required></div>
-        <button class="btn btn-success w-100" type="submit">Submit</button>
-      </form>
-      <div id="msg" class="mt-2"></div>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">FoundIT</a>
+      <div>
+        <a class="btn btn-outline-light" href="/items.html">View Items</a>
+      </div>
     </div>
-  </div>
-</div>
-<script src="js/main.js"></script>
+  </nav>
+
+  <main class="container py-4">
+    <h2 class="mb-3">Submit a Lost Item</h2>
+    <p class="text-muted">Fill out the form below. Images up to 5 MB are supported.</p>
+
+    <form id="uploadForm" action="/api/upload" method="POST" enctype="multipart/form-data" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">Item name</label>
+        <input type="text" name="itemName" class="form-control" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Location found</label>
+        <input type="text" name="location" class="form-control" required />
+      </div>
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="3" required></textarea>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Your name</label>
+        <input type="text" name="name" class="form-control" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Your email</label>
+        <input type="email" name="email" class="form-control" required />
+      </div>
+      <div class="col-12">
+        <label class="form-label">Image (optional)</label>
+        <input type="file" name="image" accept="image/*" class="form-control" />
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Submit item</button>
+        <a href="/items.html" class="btn btn-outline-secondary ms-2">View items</a>
+      </div>
+    </form>
+
+    <div id="success" class="alert alert-success mt-3 d-none">Item submitted successfully!</div>
+    <div id="error" class="alert alert-danger mt-3 d-none"></div>
+  </main>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const successBox = document.getElementById('success');
+    const errorBox = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      successBox.classList.add('d-none');
+      errorBox.classList.add('d-none');
+
+      const formData = new FormData(form);
+      try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          successBox.classList.remove('d-none');
+          form.reset();
+          setTimeout(() => { window.location.href = '/items.html'; }, 800);
+        } else {
+          errorBox.textContent = data.error || 'Upload failed';
+          errorBox.classList.remove('d-none');
+        }
+      } catch (err) {
+        errorBox.textContent = 'Network error. Please try again.';
+        errorBox.classList.remove('d-none');
+      }
+    });
+  </script>
 </body>
 </html>
