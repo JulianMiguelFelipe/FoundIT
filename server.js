@@ -3,20 +3,16 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Detect environment
 const usePostgres = !!process.env.DATABASE_URL;
-
-let db; // will hold either sqlite3 or pg pool
+let db;
 
 if (usePostgres) {
-  // PostgreSQL (Render)
   const { Pool } = require('pg');
   db = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
 
-  // Create table if not exists
   (async () => {
     await db.query(`
       CREATE TABLE IF NOT EXISTS items (
@@ -32,7 +28,6 @@ if (usePostgres) {
     `);
   })();
 } else {
-  // SQLite (local dev)
   const sqlite3 = require('sqlite3').verbose();
   const dbPath = path.join(__dirname, 'foundit.db');
   db = new sqlite3.Database(dbPath);
@@ -56,7 +51,6 @@ if (usePostgres) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -67,7 +61,6 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
@@ -79,7 +72,6 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // --- Routes ---
 
-// Create item
 app.post('/api/upload', upload.single('image'), async (req, res) => {
   const { itemName, description, location, name, email } = req.body;
   const image = req.file ? '/uploads/' + req.file.filename : '';
@@ -114,16 +106,23 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-// Read items
 app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(`SELECT * FROM items ORDER BY id DESC`);
-      res.json(result.rows);
+      const rows = result.rows.map(r => ({
+        ...r,
+        createdAt: new Date(r.createdat).toISOString()
+      }));
+      res.json(rows);
     } else {
       db.all(`SELECT * FROM items ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: 'Database error' });
-        res.json(rows);
+        const normalized = rows.map(r => ({
+          ...r,
+          createdAt: new Date(r.createdAt).toISOString()
+        }));
+        res.json(normalized);
       });
     }
   } catch (err) {
@@ -131,7 +130,6 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-// Update item
 app.put('/api/items/:id', async (req, res) => {
   const id = req.params.id;
   const { itemName, description, location, name, email } = req.body;
@@ -160,7 +158,6 @@ app.put('/api/items/:id', async (req, res) => {
   }
 });
 
-// Delete item
 app.delete('/api/items/:id', async (req, res) => {
   const id = req.params.id;
   try {
