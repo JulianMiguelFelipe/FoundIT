@@ -53,13 +53,14 @@ if (usePostgres) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Cloudinary config (your credentials) ---
+// --- Cloudinary config ---
 cloudinary.config({
   cloud_name: 'djs5iygtw',
   api_key: '824711358753588',
   api_secret: 'LUJb34Qsl9vNBKtWfB33in1Vx2U'
 });
 
+// Multer + Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -76,7 +77,7 @@ app.use(express.json());
 
 // --- Routes ---
 
-// Upload item with image
+// Create item
 app.post('/api/upload', upload.single('image'), async (req, res) => {
   const { itemName, description, location, name, email } = req.body;
   const image = req.file ? req.file.path : ''; // Cloudinary returns secure URL
@@ -111,7 +112,7 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   }
 });
 
-// Get items
+// Read items
 app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
