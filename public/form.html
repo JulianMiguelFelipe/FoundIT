@@ -41,20 +41,19 @@
         <label class="form-label">Your email</label>
         <input type="email" name="email" class="form-control" required />
       </div>
+
+      <!-- Gallery upload -->
       <div class="col-12">
-        <label class="form-label">Image (optional)</label>
-        <!-- Camera-enabled input -->
-        <input 
-          type="file" 
-          name="image" 
-          accept="image/*" 
-          capture="environment" 
-          class="form-control" 
-        />
-        <small class="text-muted">
-          You can choose a file from your gallery or take a photo with your camera.
-        </small>
+        <label class="form-label">Upload from Gallery</label>
+        <input type="file" name="image" accept="image/*" class="form-control" />
       </div>
+
+      <!-- Camera capture -->
+      <div class="col-12">
+        <label class="form-label">Take a Photo</label>
+        <input type="file" name="image" accept="image/*" capture="environment" class="form-control" />
+      </div>
+
       <div class="col-12">
         <button type="submit" class="btn btn-primary">Submit item</button>
         <a href="/items.html" class="btn btn-outline-secondary ms-2">View items</a>
