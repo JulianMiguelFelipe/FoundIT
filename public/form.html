@@ -42,16 +42,22 @@
         <input type="email" name="email" class="form-control" required />
       </div>
 
-      <!-- Gallery upload -->
+      <!-- Choice between gallery or camera -->
       <div class="col-12">
-        <label class="form-label">Upload from Gallery</label>
-        <input type="file" name="image" accept="image/*" class="form-control" />
-      </div>
+        <label class="form-label">Image (optional)</label>
 
-      <!-- Camera capture -->
-      <div class="col-12">
-        <label class="form-label">Take a Photo</label>
-        <input type="file" name="image" accept="image/*" capture="environment" class="form-control" />
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="uploadOption" id="galleryOption" value="gallery" checked>
+          <label class="form-check-label" for="galleryOption">Upload from Gallery</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="uploadOption" id="cameraOption" value="camera">
+          <label class="form-check-label" for="cameraOption">Take a Photo</label>
+        </div>
+
+        <!-- Inputs (only one visible at a time) -->
+        <input type="file" name="image" id="galleryInput" accept="image/*" class="form-control mt-2">
+        <input type="file" name="image" id="cameraInput" accept="image/*" capture="environment" class="form-control mt-2 d-none">
       </div>
 
       <div class="col-12">
@@ -68,6 +74,14 @@
     const form = document.getElementById('uploadForm');
     const successBox = document.getElementById('success');
     const errorBox = document.getElementById('error');
+
+    // Toggle inputs based on radio selection
+    document.querySelectorAll('input[name="uploadOption"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.getElementById('galleryInput').classList.toggle('d-none', radio.value !== 'gallery');
+        document.getElementById('cameraInput').classList.toggle('d-none', radio.value !== 'camera');
+      });
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
