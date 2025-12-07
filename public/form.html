@@ -61,7 +61,7 @@
       </div>
 
       <div class="col-12">
-        <button type="submit" class="btn btn-primary">Submit item</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Submit item</button>
         <a href="/items.html" class="btn btn-outline-secondary ms-2">View items</a>
       </div>
     </form>
@@ -74,6 +74,7 @@
     const form = document.getElementById('uploadForm');
     const successBox = document.getElementById('success');
     const errorBox = document.getElementById('error');
+    const submitBtn = document.getElementById('submitBtn');
 
     // Toggle inputs based on radio selection
     document.querySelectorAll('input[name="uploadOption"]').forEach(radio => {
@@ -87,6 +88,10 @@
       e.preventDefault();
       successBox.classList.add('d-none');
       errorBox.classList.add('d-none');
+
+      // Prevent duplicate submissions
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
 
       const formData = new FormData(form);
       try {
@@ -103,6 +108,9 @@
       } catch (err) {
         errorBox.textContent = 'Network error. Please try again.';
         errorBox.classList.remove('d-none');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit item';
       }
     });
   </script>
