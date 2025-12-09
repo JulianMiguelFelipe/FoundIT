@@ -224,7 +224,22 @@ app.delete('/api/items/:id', async (req, res) => {
     res.status(500).json({ error: 'Database error' });
   }
 });   // ✅ close the delete route properly
-
+// --- Check schema diagnostic ---
+app.get('/check-schema', async (req, res) => {
+  try {
+    if (!usePostgres) return res.send("SQLite schema auto-managed.");
+    const r = await db.query(`
+      SELECT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_name = 'items'
+      ORDER BY ordinal_position
+    `);
+    res.json(r.rows);
+  } catch (err) {
+    console.error("check-schema error:", err);
+    res.status(500).send("check-schema failed: " + err.message);
+  }
+});
 // --- Temporary schema fix route ---
 // Read items
 app.get('/api/items', async (req, res) => {
@@ -266,5 +281,6 @@ app.get('/api/items', async (req, res) => {
 });
 // Finally start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
+
 
 
