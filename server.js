@@ -233,3 +233,10 @@ app.get('/fix-schema', async (req, res) => {
       res.send("SQLite schema is already handled automatically.");
     }
   } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Schema fix failed: " + err.message);
+  }
+});  // ✅ closes the /fix-schema route
+
+// Finally start the server
+app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
