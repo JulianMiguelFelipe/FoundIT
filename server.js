@@ -18,20 +18,17 @@ if (usePostgres) {
     await db.query(`
       CREATE TABLE IF NOT EXISTS items (
         id SERIAL PRIMARY KEY,
-        itemName TEXT NOT NULL,
+        itemname TEXT NOT NULL,
         description TEXT NOT NULL,
         location TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        studentNumber TEXT,
+        studentnumber TEXT,
         image TEXT,
-        createdAt TIMESTAMP NOT NULL,
+        createdat TIMESTAMP NOT NULL DEFAULT NOW(),
         returned BOOLEAN DEFAULT false
       )
     `);
-
-    await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS returned BOOLEAN DEFAULT false`);
-    await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS studentNumber TEXT`);
   })();
 } else {
   const sqlite3 = require('sqlite3').verbose();
@@ -42,28 +39,17 @@ if (usePostgres) {
     db.run(`
       CREATE TABLE IF NOT EXISTS items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        itemName TEXT NOT NULL,
+        itemname TEXT NOT NULL,
         description TEXT NOT NULL,
         location TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        studentNumber TEXT,
+        studentnumber TEXT,
         image TEXT,
-        createdAt TEXT NOT NULL,
+        createdat TEXT NOT NULL,
         returned INTEGER DEFAULT 0
       )
     `);
-
-    db.all(`PRAGMA table_info(items);`, [], (err, cols) => {
-      const hasSN = cols.some(c => c.name === 'studentNumber');
-      if (!hasSN) {
-        db.run(`ALTER TABLE items ADD COLUMN studentNumber TEXT`);
-      }
-      const hasReturned = cols.some(c => c.name === 'returned');
-      if (!hasReturned) {
-        db.run(`ALTER TABLE items ADD COLUMN returned INTEGER DEFAULT 0`);
-      }
-    });
   });
 }
 
@@ -106,14 +92,14 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(
-        `INSERT INTO items (itemName, description, location, name, email, studentNumber, image, createdAt, returned)
+        `INSERT INTO items (itemname, description, location, name, email, studentnumber, image, createdat, returned)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
         [itemName, description, location, name, email, studentNumber, image, createdAt, false]
       );
       res.json({ success: true, id: result.rows[0].id });
     } else {
       db.run(
-        `INSERT INTO items (itemName, description, location, name, email, studentNumber, image, createdAt, returned)
+        `INSERT INTO items (itemname, description, location, name, email, studentnumber, image, createdat, returned)
          VALUES (?,?,?,?,?,?,?,?,?)`,
         [itemName, description, location, name, email, studentNumber, image, createdAt, 0],
         function (err) {
@@ -133,12 +119,20 @@ app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(`
-        SELECT id, itemName, description, location, name, email, studentNumber, image, createdAt, returned
+        SELECT id, itemname, description, location, name, email, studentnumber, image, createdat, returned
         FROM items ORDER BY id DESC
       `);
       const rows = result.rows.map(r => ({
-        ...r,
-        createdAt: new Date(r.createdAt).toISOString()
+        id: r.id,
+        itemName: r.itemname,
+        description: r.description,
+        location: r.location,
+        name: r.name,
+        email: r.email,
+        studentNumber: r.studentnumber,
+        image: r.image,
+        createdAt: r.createdat ? new Date(r.createdat).toISOString() : null,
+        returned: r.returned
       }));
       res.json(rows);
     } else {
@@ -146,12 +140,14 @@ app.get('/api/items', async (req, res) => {
         if (err) return res.status(500).json({ error: 'Database error' });
         const normalized = rows.map(r => ({
           ...r,
-          createdAt: new Date(r.createdAt).toISOString()
+          createdAt: new Date(r.createdat).toISOString(),
+          returned: !!r.returned
         }));
         res.json(normalized);
       });
     }
   } catch (err) {
+    console.error("GET /api/items error:", err);
     res.status(500).json({ error: 'Database error' });
   }
 });
@@ -164,14 +160,14 @@ app.put('/api/items/:id', async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(
-        `UPDATE items SET itemName=$1, description=$2, location=$3, name=$4, email=$5, studentNumber=$6, returned=$7 WHERE id=$8`,
+        `UPDATE items SET itemname=$1, description=$2, location=$3, name=$4, email=$5, studentnumber=$6, returned=$7 WHERE id=$8`,
         [itemName, description, location, name, email, studentNumber, returned, id]
       );
       if (result.rowCount === 0) return res.status(404).json({ error: 'Item not found' });
       res.json({ success: true });
     } else {
       db.run(
-        `UPDATE items SET itemName=?, description=?, location=?, name=?, email=?, studentNumber=?, returned=? WHERE id=?`,
+        `UPDATE items SET itemname=?, description=?, location=?, name=?, email=?, studentnumber=?, returned=? WHERE id=?`,
         [itemName, description, location, name, email, studentNumber, returned ? 1 : 0, id],
         function (err) {
           if (err) return res.status(500).json({ error: 'Database error' });
@@ -223,64 +219,17 @@ app.delete('/api/items/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
-});   // ✅ close the delete route properly
-// --- Check schema diagnostic ---
-app.get('/check-schema', async (req, res) => {
-  try {
-    if (!usePostgres) return res.send("SQLite schema auto-managed.");
-    const r = await db.query(`
-      SELECT column_name, data_type
-      FROM information_schema.columns
-      WHERE table_name = 'items'
-      ORDER BY ordinal_position
-    `);
-    res.json(r.rows);
-  } catch (err) {
-    console.error("check-schema error:", err);
-    res.status(500).send("check-schema failed: " + err.message);
-  }
 });
+
 // --- Temporary schema fix route ---
-// Read items
-app.get('/api/items', async (req, res) => {
+app.get('/fix-schema', async (req, res) => {
   try {
     if (usePostgres) {
-      const result = await db.query(`
-        SELECT id, itemName, description, location, name, email, studentNumber, image, createdAt, returned
-        FROM items ORDER BY id DESC
-      `);
-      const rows = result.rows.map(r => {
-        let iso;
-        try {
-          iso = r.createdat ? new Date(r.createdat).toISOString() : new Date().toISOString();
-        } catch {
-          iso = new Date().toISOString();
-        }
-        return { ...r, createdAt: iso };
-      });
-      res.json(rows);
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS studentnumber TEXT`);
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS returned BOOLEAN DEFAULT false`);
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS createdat TIMESTAMP NOT NULL DEFAULT NOW()`);
+      res.send("✅ Schema fixed for Postgres!");
     } else {
-      db.all(`SELECT * FROM items ORDER BY id DESC`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
-        const normalized = rows.map(r => {
-          let iso;
-          try {
-            iso = r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString();
-          } catch {
-            iso = new Date().toISOString();
-          }
-          return { ...r, createdAt: iso, returned: !!r.returned };
-        });
-        res.json(normalized);
-      });
+      res.send("SQLite schema is already handled automatically.");
     }
   } catch (err) {
-    console.error("GET /api/items error:", err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-// Finally start the server
-app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
-
-
-
