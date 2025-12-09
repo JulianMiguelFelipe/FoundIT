@@ -226,22 +226,45 @@ app.delete('/api/items/:id', async (req, res) => {
 });   // ✅ close the delete route properly
 
 // --- Temporary schema fix route ---
-app.get('/fix-schema', async (req, res) => {
+// Read items
+app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
-      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS studentNumber TEXT`);
-      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS returned BOOLEAN DEFAULT false`);
-      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS createdAt TIMESTAMP NOT NULL DEFAULT NOW()`);
-      res.send("✅ Schema fixed for Postgres!");
+      const result = await db.query(`
+        SELECT id, itemName, description, location, name, email, studentNumber, image, createdAt, returned
+        FROM items ORDER BY id DESC
+      `);
+      const rows = result.rows.map(r => {
+        let iso;
+        try {
+          iso = r.createdat ? new Date(r.createdat).toISOString() : new Date().toISOString();
+        } catch {
+          iso = new Date().toISOString();
+        }
+        return { ...r, createdAt: iso };
+      });
+      res.json(rows);
     } else {
-      res.send("SQLite schema is already handled automatically.");
+      db.all(`SELECT * FROM items ORDER BY id DESC`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        const normalized = rows.map(r => {
+          let iso;
+          try {
+            iso = r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString();
+          } catch {
+            iso = new Date().toISOString();
+          }
+          return { ...r, createdAt: iso, returned: !!r.returned };
+        });
+        res.json(normalized);
+      });
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).send("❌ Schema fix failed: " + err.message);
+    console.error("GET /api/items error:", err);
+    res.status(500).json({ error: 'Database error' });
   }
 });
-
 // Finally start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
+
 
