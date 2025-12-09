@@ -23,7 +23,6 @@ if (usePostgres) {
         location TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        phone TEXT,
         studentNumber TEXT,
         image TEXT,
         createdAt TIMESTAMP NOT NULL,
@@ -32,6 +31,7 @@ if (usePostgres) {
     `);
 
     await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS returned BOOLEAN DEFAULT false`);
+    await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS studentNumber TEXT`);
   })();
 } else {
   const sqlite3 = require('sqlite3').verbose();
@@ -47,7 +47,6 @@ if (usePostgres) {
         location TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        phone TEXT,
         studentNumber TEXT,
         image TEXT,
         createdAt TEXT NOT NULL,
@@ -96,7 +95,7 @@ app.use(express.json());
 
 // Create item
 app.post('/api/upload', upload.single('image'), async (req, res) => {
-  const { itemName, description, location, name, email, phone, studentNumber } = req.body;
+  const { itemName, description, location, name, email, studentNumber } = req.body;
   const image = req.file ? req.file.path : '';
   const createdAt = new Date().toISOString();
 
@@ -107,16 +106,16 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(
-        `INSERT INTO items (itemName, description, location, name, email, phone, studentNumber, image, createdAt, returned)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-        [itemName, description, location, name, email, phone, studentNumber, image, createdAt, false]
+        `INSERT INTO items (itemName, description, location, name, email, studentNumber, image, createdAt, returned)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+        [itemName, description, location, name, email, studentNumber, image, createdAt, false]
       );
       res.json({ success: true, id: result.rows[0].id });
     } else {
       db.run(
-        `INSERT INTO items (itemName, description, location, name, email, phone, studentNumber, image, createdAt, returned)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        [itemName, description, location, name, email, phone, studentNumber, image, createdAt, 0],
+        `INSERT INTO items (itemName, description, location, name, email, studentNumber, image, createdAt, returned)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        [itemName, description, location, name, email, studentNumber, image, createdAt, 0],
         function (err) {
           if (err) return res.status(500).json({ error: 'Database error' });
           res.json({ success: true, id: this.lastID });
@@ -134,7 +133,7 @@ app.get('/api/items', async (req, res) => {
   try {
     if (usePostgres) {
       const result = await db.query(`
-        SELECT id, itemName, description, location, name, email, phone, studentNumber, image, createdAt, returned
+        SELECT id, itemName, description, location, name, email, studentNumber, image, createdAt, returned
         FROM items ORDER BY id DESC
       `);
       const rows = result.rows.map(r => ({
@@ -160,20 +159,20 @@ app.get('/api/items', async (req, res) => {
 // Update item
 app.put('/api/items/:id', async (req, res) => {
   const id = req.params.id;
-  const { itemName, description, location, name, email, phone, studentNumber, returned } = req.body;
+  const { itemName, description, location, name, email, studentNumber, returned } = req.body;
 
   try {
     if (usePostgres) {
       const result = await db.query(
-        `UPDATE items SET itemName=$1, description=$2, location=$3, name=$4, email=$5, phone=$6, studentNumber=$7, returned=$8 WHERE id=$9`,
-        [itemName, description, location, name, email, phone, studentNumber, returned, id]
+        `UPDATE items SET itemName=$1, description=$2, location=$3, name=$4, email=$5, studentNumber=$6, returned=$7 WHERE id=$8`,
+        [itemName, description, location, name, email, studentNumber, returned, id]
       );
       if (result.rowCount === 0) return res.status(404).json({ error: 'Item not found' });
       res.json({ success: true });
     } else {
       db.run(
-        `UPDATE items SET itemName=?, description=?, location=?, name=?, email=?, phone=?, studentNumber=?, returned=? WHERE id=?`,
-        [itemName, description, location, name, email, phone, studentNumber, returned ? 1 : 0, id],
+        `UPDATE items SET itemName=?, description=?, location=?, name=?, email=?, studentNumber=?, returned=? WHERE id=?`,
+        [itemName, description, location, name, email, studentNumber, returned ? 1 : 0, id],
         function (err) {
           if (err) return res.status(500).json({ error: 'Database error' });
           if (this.changes === 0) return res.status(404).json({ error: 'Item not found' });
@@ -186,7 +185,7 @@ app.put('/api/items/:id', async (req, res) => {
   }
 });
 
-// Mark item as returned (shortcut route)
+// Mark item as returned
 app.put('/api/items/:id/returned', async (req, res) => {
   const id = req.params.id;
   try {
