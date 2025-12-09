@@ -223,6 +223,22 @@ app.delete('/api/items/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
+  // --- Temporary schema fix route ---
+app.get('/fix-schema', async (req, res) => {
+  try {
+    if (usePostgres) {
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS studentNumber TEXT`);
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS returned BOOLEAN DEFAULT false`);
+      await db.query(`ALTER TABLE items ADD COLUMN IF NOT EXISTS createdAt TIMESTAMP NOT NULL DEFAULT NOW()`);
+      res.send("✅ Schema fixed for Postgres!");
+    } else {
+      res.send("SQLite schema is already handled automatically.");
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("❌ Schema fix failed: " + err.message);
+  }
 });
 
+// Finally start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
