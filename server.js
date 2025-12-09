@@ -223,7 +223,9 @@ app.delete('/api/items/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
-  // --- Temporary schema fix route ---
+});   // ✅ close the delete route properly
+
+// --- Temporary schema fix route ---
 app.get('/fix-schema', async (req, res) => {
   try {
     if (usePostgres) {
@@ -242,3 +244,4 @@ app.get('/fix-schema', async (req, res) => {
 
 // Finally start the server
 app.listen(PORT, () => console.log(`Server running on port ${PORT} (Postgres: ${usePostgres})`));
+
