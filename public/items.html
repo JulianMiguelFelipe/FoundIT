@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FoundIT - Items</title>
+  <title>FoundIT! - Items</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="css/style.css" rel="stylesheet"> <!-- ✅ external stylesheet -->
+  <link href="css/style.css" rel="stylesheet">
 </head>
 
 <body class="items-page">
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-      <a class="navbar-brand" href="/">FoundIT</a>
+      <a class="navbar-brand" href="/">FoundIT!</a>
       <div>
         <a class="btn btn-outline-light" href="/form.html">Submit Item</a>
       </div>
@@ -21,7 +21,21 @@
   <main class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="mb-0">Lost & Found Items</h2>
-      <input id="search" class="form-control w-50" placeholder="Search by name or location" />
+      <div class="d-flex gap-2 w-50">
+        <input id="search" class="form-control" placeholder="Search by name or location" />
+        <!-- ✅ Filter dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterBtn" data-bs-toggle="dropdown" aria-expanded="false">
+            Sort
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="filterBtn">
+            <li><a class="dropdown-item" href="#" data-sort="nameAsc">Name (A–Z)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="nameDesc">Name (Z–A)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="timeAsc">Time Reported (Oldest)</a></li>
+            <li><a class="dropdown-item" href="#" data-sort="timeDesc">Time Reported (Newest)</a></li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div id="grid" class="row g-3"></div>
@@ -38,7 +52,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="modalDesc"></p>
+          <p><strong>Description:</strong> <span id="modalDesc"></span></p>
           <p><strong>Location found:</strong> <span id="modalLoc"></span></p>
           <p><strong>Contact:</strong> <span id="modalName"></span> — <a id="modalEmail"></a></p>
           <img id="modalImg" class="img-fluid d-none mt-2 rounded" alt="Item image" />
@@ -48,8 +62,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- ===== KEEP YOUR ORIGINAL JS BELOW (UNCHANGED) ===== -->
+  
   <script>
     const grid = document.getElementById('grid');
     const empty = document.getElementById('empty');
@@ -138,6 +151,26 @@
         i.location.toLowerCase().includes(q)
       );
       render(filtered);
+    });
+
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sortType = item.getAttribute('data-sort');
+        let sorted = [...allItems];
+
+        if (sortType === 'nameAsc') {
+          sorted.sort((a, b) => a.itemName.localeCompare(b.itemName));
+        } else if (sortType === 'nameDesc') {
+          sorted.sort((a, b) => b.itemName.localeCompare(a.itemName));
+        } else if (sortType === 'timeAsc') {
+          sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        } else if (sortType === 'timeDesc') {
+          sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        render(sorted);
+      });
     });
 
     function escapeHtml(str) {

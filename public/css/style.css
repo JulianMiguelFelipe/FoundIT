@@ -199,3 +199,113 @@ h2 {
 .btn-close {
   filter: invert(1);
 }
+/* =========================================================
+   INDEX PAGE STYLES
+   ========================================================= */
+   /* General page background */
+body.items-page {
+  background-color: #f8f9fa; /* light gray background */
+  min-height: 100vh;
+}
+
+/* Navbar */
+.navbar {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.navbar .btn {
+  font-weight: 500;
+}
+
+/* Headings */
+h2 {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.alert-info {
+  background-color: #e9f5ff;
+  color: #0a58ca;
+}
+.alert-danger {
+  background-color: #ffe9e9;
+  color: #b02a37;
+}
+
+/* Cards for submissions */
+.card {
+  border: none;
+  border-radius: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #810006;
+}
+.card-text {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+/* Card footer */
+.card-footer {
+  background-color: transparent;
+  border-top: none;
+}
+
+/* Mark as Returned button */
+.btn-primary[data-action="mark"] {
+  background-color: #198754; /* green instead of blue */
+  border-color: #198754;
+  font-weight: 500;
+}
+.btn-primary[data-action="mark"]:hover {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+/* Form inputs */
+.form-label {
+  font-weight: 500;
+}
+.form-control {
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+}
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+}
+/* Filter button styling */
+#filterBtn {
+  background-color: #146c43;   /* primary blue */
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+#filterBtn:hover {
+  background-color: #001d02;   /* darker blue on hover */
+  transform: translateY(-2px);
+}
+
+.dropdown-menu {
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+  background-color: #e9f2ff;   /* light blue highlight */
+  color: #006125;
+}
