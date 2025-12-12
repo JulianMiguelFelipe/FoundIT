@@ -8,18 +8,22 @@ A browser-based, mobile-friendly solution for reporting and recovering lost item
 ---
 
 ## 📸 Preview
-*(Insert screenshot of homepage or item cards here)*
-
+![Homepage](https://i.imgur.com/0EDQlTC.png)
+![Items Page](https://i.imgur.com/qzcVXeI.jpeg)
+![Form Page](https://i.imgur.com/lKlZBJT.png)
+![Manage Page](https://i.imgur.com/nPfTyYD.jpeg)
+![Admin Page](https://i.imgur.com/XIiMaB5.png)
+![Secret Page]()
 ---
 
 ## ✨ Key Features
 
-### 🧍 Submitter Interface (`/form.html`)
+### 🧍 Report Lost Item Interface (`/form.html`)
 - Report lost or found items with complete details and image support  
 - Automatically saves submissions to the shared database  
 - Clean, responsive form layout with instant feedback  
 
-### 🕵️‍♂️ Finder Interface (`/items.html`)
+### 🕵️‍♂️ Tind Lost Item Interface (`/items.html`)
 - Browse uploaded items with image previews  
 - View item details including description, location, and contact information  
 - Mobile-optimized card layout for quick scanning and easy navigation  
@@ -47,9 +51,9 @@ A browser-based, mobile-friendly solution for reporting and recovering lost item
 
 ## 👥 Contributor
 
-- **Julian Miguel I. Felipe**  
-*(Add more names if applicable)*
-
+- **Julian Miguel Felipe**  
+- **Kazleen June Caballero ** 
+- **Ricardo Gian Herrero**  
 ---
 
 ## 🚀 Getting Started (Local Setup)
@@ -72,3 +76,4 @@ npm install
 
 # Start the server
 npm start
+
